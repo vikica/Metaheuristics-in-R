@@ -1,11 +1,22 @@
-# TODO docstring
+# R script for optimization benchmarks functions
+# Author: Jana Viktoria Kovacikova
+# Date: May 14, 2023
+
+
 #' Run optimization and save the results into a .csv file
 #'
 #' This function runs the provided optimization method and saves the results
 #' such as solution, messages, execution time, etc into a .csv file.
 #'
-#' @param
-#' @return
+#' @param package The name of the package that the optimization method
+#' is supposed to be loaded from.
+#' @param optimization_method The name of the optimization method.
+#' @param parameters_for_optimization_method A list containing all parameters
+#' that would normally be passed to the provided optimization method.
+#' @param output_file A path where the results should be stored. The path must
+#' contain the name of the csv file (for example "path/filename.csv").
+#' @param time_units A character string. Units for execution time measurement,
+#' the same format is supported as in (base) difftime function.
 #' @examples
 #' Rosenbrock <- function(x) {(1 - x[1])^2 + 100 * (x[2] - x[1]^2)^2}
 #' run_and_save(package = "stats", optimization_method = "optim",
@@ -30,14 +41,15 @@ run_and_save <- function(package, optimization_method,
 
 #' Save a dataframe to csv safely
 #'
-#' This function saves the dataframe to the output_file (csv). If the file
-#' already exists, the data will be appended. If the data is incompatible with
-#' the existing file, a new file will be created.
+#' This function saves the dataframe to the output_file (csv). If the file does
+#' not exist or can't be read or is incompatible with the new data, a new file
+#' will be created. Otherwise the data will be appended.
 #'
-#' @param dataframe A dataframe to be saved.
-#' @param output_file The path to the csv file.
-#' @return A character message indicating whether a new file was created or
-#' if the data was appended to an existing file.
+#' @param dataframe A dataframe containing the data to be saved.
+#' @param output_file A path where the data should be stored. The path must
+#' contain the name of the csv file (for example "path/filename.csv").
+#' @return A character string. A message indicating whether a new file was
+#' created or whether the data was appended to an existing file.
 save_df_to_csv <- function(dataframe, output_file) {
   dir_path <- dirname(output_file)
   if (!dir.exists(dir_path)) {
@@ -45,8 +57,9 @@ save_df_to_csv <- function(dataframe, output_file) {
   }
 
   csv_data <- load_csv_data(output_file)
+
   if (is.null(csv_data)) {
-    # the file does not exist, create a new one
+    # the file does not exist or can't be opened, so create a new one
     write.csv(dataframe, file = output_file, row.names = FALSE)
     return(sprintf("Creating a new file %s", output_file))
   }
@@ -59,9 +72,9 @@ save_df_to_csv <- function(dataframe, output_file) {
         return(sprintf("Appending to the file %s", output_file))
       },
       error = function(e) {
+        # cannot combine the existing data with the new dataframe
         new_file <- paste(substr(output_file, 1, nchar(output_file)-4),
                           "_new.csv", sep = "")
-        # cannot combine the existing data with the new dataframe
         return(save_df_to_csv(dataframe, new_file))
       }
     )
@@ -69,25 +82,22 @@ save_df_to_csv <- function(dataframe, output_file) {
 }
 
 
-#' Load csv file
+#' Load the csv file
 #'
-#' Load csv file and return loaded data as a dataframe. If the file cannot be
-#' read, return NULL.
+#' Load the csv file from path and return loaded data as a dataframe with header.
+#' If the file cannot be read, return NULL.
 #'
-#' @param output_file The path to the csv file.
-#' @return The loaded data in a dataframe or NULL.
-load_csv_data <- function(output_file) {
-  tryCatch(
-    {
-      csv_data <- read.csv(output_file, header = TRUE)
-    },
-    error = function(e) {
-      csv_data <- NULL
-    },
-    warning = function(w) {
-      csv_data <- NULL
-    }
-  )
+#' @param path_to_csv_file The path to the csv file.
+#' @return The loaded data as a dataframe or NULL.
+load_csv_data <- function(path_to_csv_file) {
+  csv_data <- NULL
+  if (file.exists(path_to_csv_file)) {
+    tryCatch(
+      {csv_data <- read.csv(path_to_csv_file, header = TRUE)},
+      error = function(e) {},
+      warning = function(w) {}
+    )
+  }
   return(csv_data)
 }
 
@@ -98,9 +108,15 @@ load_csv_data <- function(output_file) {
 #' Run optimization and return the results (including execution time)
 #' as a dataframe with 1 row in a unified way.
 #'
+#' @param package The name of the package that the optimization method
+#' is supposed to be loaded from.
+#' @param optimization_method The name of the optimization method.
+#' @param parameters_for_optimization_method A list containing all parameters
+#' that would normally be passed to the provided optimization method.
 #' @param time_units character string. Units for execution time measurement,
 #' the same format is supported as in (base) difftime function.
-#' @return
+#' @return A dataframe containing the data about the optimization run and
+#' the optimization results.
 #' @examples
 #' Rosenbrock <- function(x) {(1 - x[1])^2 + 100 * (x[2] - x[1]^2)^2}
 #' get_results(package = "stats", optimization_method = "optim",
@@ -134,7 +150,8 @@ get_results <- function(package, optimization_method,
   # prepare the data
 
   # fill the dataframe
-  df <- data.frame(R_package = package, method = optimization_method
+  df <- data.frame(R_package = package, method = optimization_method,
+                   method2 = optimization_method
                    # objective_function = c(objective_function)
                    # starting_point = c(starting_point),
                    # lower = c(lower), upper = c(upper),
