@@ -120,7 +120,6 @@ load_csv_data <- function(path_to_csv_file) {
 }
 
 
-# TODO
 #' Run optimization and return the results in a unified way
 #'
 #' Run optimization and return the results (including execution time)
@@ -188,7 +187,7 @@ get_results <- function(package, optimization_method,
 
 #' Get the optimization input data
 #'
-#' Categorize the input data from input_list into information about
+#' Categorize the input data from input_list into information about dimension,
 #' starting point, lower and upper bound, and maximum number of
 #' iterations/evaluations.
 #' It is only suitable for packages "GA", "DEoptim", pso", "ABCoptim", "nloptr",
@@ -215,6 +214,7 @@ get_input_data <- function(package_name, input_list) {
     starting_point <- input_list[[1]]
   }
   if (!identical(starting_point, "-")) {
+    dimension <- length(starting_point)
     starting_point <- paste("(", paste(starting_point, collapse = ", "), ")",
                             sep = "")
   }
@@ -241,9 +241,11 @@ get_input_data <- function(package_name, input_list) {
     )
   }
   if (!identical(lower_bound, "?")) {
+    dimension <- length(lower_bound)
     lower_bound <- paste("(", paste(lower_bound, collapse = ", "), ")", sep = "")
   }
   if (!identical(upper_bound, "?")) {
+    dimension <- length(upper_bound)
     upper_bound <- paste("(", paste(upper_bound, collapse = ", "), ")", sep = "")
   }
 
@@ -281,9 +283,10 @@ get_input_data <- function(package_name, input_list) {
     )
   }
 
-  return (data.frame(starting_point = starting_point, lower_bound = lower_bound,
-            upper_bound = upper_bound, max_iterations = max_iterations,
-            max_evaluations = max_evaluations))
+  return (data.frame(dimension = dimension, starting_point = starting_point,
+                     lower_bound = lower_bound, upper_bound = upper_bound,
+                     max_iterations = max_iterations,
+                     max_evaluations = max_evaluations))
 }
 
 
@@ -308,7 +311,7 @@ get_output_data <- function(package_name, opti_output) {
                number_of_evaluations = "-", convergence = "-", message = "-")
   if (package_name == "GA") {
     solution <- opti_output@solution
-    results["value"] <- opti_output@fitnessValue
+    results["value"] <- -opti_output@fitnessValue
     results["number_of_iterations"] <- opti_output@iter
   }
   else if (package_name == "DEoptim") {
