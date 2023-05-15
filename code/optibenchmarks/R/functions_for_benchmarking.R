@@ -15,27 +15,38 @@
 #' that would normally be passed to the provided optimization method.
 #' @param output_file A path where the results should be stored. The path must
 #' contain the name of the csv file (for example "path/filename.csv").
+#' @param objective_name A character string. The name of the objective function.
+#' This is only needed to document the name of objective in the csv file
+#' (as it is hard to get the name of the objective directly from
+#' parameters_for_optimization_method). The value of objective_name does not
+#' influence the optimization. However, the provided objective_name should
+#' correspond to the objective passed in parameters_for_optimization_method.
 #' @param time_units A character string. Units for execution time measurement,
-#' the same format is supported as in (base) difftime function.
+#' the same format is supported as in (base) difftime function. Default value is
+#' "secs".
 #' @examples
 #' Rosenbrock <- function(x) {(1 - x[1])^2 + 100 * (x[2] - x[1]^2)^2}
 #' run_and_save(package = "stats", optimization_method = "optim",
 #'              parameters_for_optimization_method = list(
 #'                par = c(2, -1), fn = Rosenbrock, method = "L-BFGS-B",
 #'                lower = c(-5, -5), upper = c(5, 5),
-#'                control=list(maxit=1000)),
+#'                control=list(maxit = 1000)),
 #'              output_file = "export.csv")
 #' @export
 run_and_save <- function(package, optimization_method,
                          parameters_for_optimization_method,
-                         output_file,
-                         time_units="secs") {
+                         output_file, objective_name = "-",
+                         time_units = "secs") {
 
   result <- get_results(package, optimization_method,
                         parameters_for_optimization_method, time_units)
 
+  # add data about objective
+  column_objective <- data.frame(objective_name = objective_name)
+  df <- cbind(column_objective, result)
+
   # save the result
-  save_df_to_csv(result, output_file)
+  save_df_to_csv(df, output_file)
 }
 
 
@@ -66,7 +77,7 @@ save_df_to_csv <- function(dataframe, output_file) {
   else {
     tryCatch(
       {
-        combined_dataframe <- rbind(dataframe, csv_data)
+        combined_dataframe <- rbind(csv_data, dataframe)
         # append the data
         write.csv(combined_dataframe, file = output_file, row.names = FALSE)
         return(sprintf("Appending to the file %s", output_file))
@@ -148,6 +159,7 @@ get_results <- function(package, optimization_method,
   execution_time <- difftime(end_time, start_time, units = time_units)
 
   # prepare the data
+  input_data <- get_input_data(package, parameters_for_optimization_method)
 
   # fill the dataframe
   df <- data.frame(R_package = package, method = optimization_method,
@@ -155,6 +167,7 @@ get_results <- function(package, optimization_method,
                    # objective_function = c(objective_function)
                    # starting_point = c(starting_point),
                    # lower = c(lower), upper = c(upper),
+                   # number_of_iterations_evaluations =
                    # all_opti_params = paste(
                    #   named_list_to_str(parameters_for_optimization_method)),
                    # solution = c(solution),
@@ -169,18 +182,63 @@ get_results <- function(package, optimization_method,
 }
 
 
-Rosenbrock <- function(x) {
-  (1 - x[1])^2 + 100 * (x[2] - x[1]^2)^2
+get_input_data <- function(package_name, input_list) {
+
+  # get the starting point
+  starting_point <- "-"
+  if (package_name %in% c("optim", "pso", "ABCoptim")) {
+    tryCatch(
+      {starting_point <- input_list[["par"]]},
+      error = function(e) {
+        starting_point <- input_list[[1]]
+      }
+    )
+  }
+  starting_point <- paste("(", paste(starting_point, collapse = ", "), ")",
+                          sep = "")
+
+  # get the lower and upper bounds
+  lower_bound <- "?"
+  upper_bound <- "?"
+  if (package_name == "ABCoptim") {
+    tryCatch(
+      {
+        lower_bound <- input_list[["lb"]]
+        upper_bound <- input_list[["ub"]]
+      },
+      error = function(e) {}
+    )
+  }
+  else {
+    tryCatch(
+      {
+        lower_bound <- input_list[["lower"]]
+        upper_bound <- input_list[["upper"]]
+      },
+      error = function(e) {}
+    )
+  }
+  lower_bound <- paste("(", paste(lower_bound, collapse = ", "), ")", sep = "")
+  upper_bound <- paste("(", paste(upper_bound, collapse = ", "), ")", sep = "")
+
+
+
+
+  # optim: par, fn, kwargs = (method, lower, upper, control[maxit])
+
+
+  #"ga" type, fitness, lower, upper, kwargs=maxiter
+
+  # "DEoptim" fn, lower, upper, control[itermax]
+
+  # "pso" par, fn, kwargs = (lower, upper, control[maxit])
+
+  # "cobyla" x0, fn, kwargs = (lower, upper), control[]
+
+  # "abc_optim" par, fn, kwargs = (lb, ub, maxCycle, criter)
+
+  return (c(starting_point = starting_point, lower_bound = lower_bound,
+            upper_bound = upper_bound))
+
 }
-get_results(package = "stats", optimization_method = "optim",
-            parameters_for_optimization_method = list(
-              par = c(2, -1), fn = Rosenbrock, method = "L-BFGS-B",
-              lower = c(-5, -5), upper = c(5, 5),
-              control=list(maxit=1000)))
-run_and_save(package = "stats", optimization_method = "optim",
-             parameters_for_optimization_method = list(
-              par = c(2, -1), fn = Rosenbrock, method = "L-BFGS-B",
-              lower = c(-5, -5), upper = c(5, 5),
-              control=list(maxit=1000)),
-             output_file = "/home/viki/Dokumenty/vikine_skolske/bakalarka_final/export.csv")
 
