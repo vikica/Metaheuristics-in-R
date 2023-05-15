@@ -7,6 +7,13 @@
 #'
 #' This function runs the provided optimization method and saves the results
 #' such as solution, messages, execution time, etc into a .csv file.
+#' If the optimization method is not from one of the packages ("GA", "DEoptim",
+#' pso", "ABCoptim", "nloptr"), nor the method "optim" from package "stats",
+#' some parts of the result may be faulty/empty.
+#' For package "GA", it is expected to pass a maximization problem as objective
+#' function - it is expected to pass a minus minimization problem, otherwise the
+#' optimal value will have the incorrect sign (positive instead of negative or
+#' vice versa).
 #'
 #' @param package The name of the package that the optimization method
 #' is supposed to be loaded from.
@@ -118,6 +125,9 @@ load_csv_data <- function(path_to_csv_file) {
 #'
 #' Run optimization and return the results (including execution time)
 #' as a dataframe with 1 row in a unified way.
+#' If the optimization method is not from one of the packages ("GA", "DEoptim",
+#' pso", "ABCoptim", "nloptr"), nor the method "optim" from package "stats",
+#' some parts of the result may be faulty/empty.
 #'
 #' @param package The name of the package that the optimization method
 #' is supposed to be loaded from.
@@ -166,25 +176,12 @@ get_results <- function(package, optimization_method,
     input_data <- c(starting_point = "?", lower_bound = "?", upper_bound = "?",
                     max_iterations = "?", max_evaluations = "?")
   }
+  output_data <- get_output_data(package, result)
 
   # fill the dataframe
-  df <- data.frame(R_package = package, method = optimization_method,
-                   method2 = optimization_method
-                   # objective_function = c(objective_function)
-                   # starting_point = c(starting_point),
-                   # lower = c(lower), upper = c(upper),
-                   # number_of_iterations_evaluations =
-                   # all_opti_params = paste(
-                   #   named_list_to_str(parameters_for_optimization_method)),
-                   # solution = c(solution),
-                   # optimal_value = c(optimal_value),
-                   # iterations = c(iterations),
-                   # convergence = c(convergence),
-                   # message = c(message),
-                   # execution_time = c(execution_time),
-                   # units = c(units)
-  )
-  df <- cbind(df, input_data)
+  df <- data.frame(R_package = package, method = optimization_method)
+  df <- cbind(df, input_data, output_data)
+
   return(df)
 }
 
@@ -217,8 +214,10 @@ get_input_data <- function(package_name, input_list) {
   if (is.null(starting_point)) {
     starting_point <- input_list[[1]]
   }
-  starting_point <- paste("(", paste(starting_point, collapse = ", "), ")",
-                          sep = "")
+  if (!identical(starting_point, "-")) {
+    starting_point <- paste("(", paste(starting_point, collapse = ", "), ")",
+                            sep = "")
+  }
 
   # get the lower and upper bounds
   lower_bound <- "?"
@@ -241,8 +240,12 @@ get_input_data <- function(package_name, input_list) {
       error = function(e) {}
     )
   }
-  lower_bound <- paste("(", paste(lower_bound, collapse = ", "), ")", sep = "")
-  upper_bound <- paste("(", paste(upper_bound, collapse = ", "), ")", sep = "")
+  if (!identical(lower_bound, "?")) {
+    lower_bound <- paste("(", paste(lower_bound, collapse = ", "), ")", sep = "")
+  }
+  if (!identical(upper_bound, "?")) {
+    upper_bound <- paste("(", paste(upper_bound, collapse = ", "), ")", sep = "")
+  }
 
   # get max iterations/evaluations
   max_iterations <- "-"
@@ -281,5 +284,81 @@ get_input_data <- function(package_name, input_list) {
   return (data.frame(starting_point = starting_point, lower_bound = lower_bound,
             upper_bound = upper_bound, max_iterations = max_iterations,
             max_evaluations = max_evaluations))
+}
+
+
+#' Get the optimization output data
+#'
+#' Categorize the output data from opti_output and return a dataframe containing
+#' information about the found optimal value, solution, number of iterations
+#' and evaluations, convergence and message.
+#' The function is only designed for packages "GA", "DEoptim", pso", "ABCoptim",
+#' "nloptr", and the function "optim" from package "stats". If used with some
+#' other package, the results may be faulty/empty.
+#'
+#' @param package The name of the package that the optimization method
+#' is supposed to be loaded from.
+#' @param opti_output The output of an optimization method from the
+#' specified package.
+#' @return A dataframe containing the information about the found optimal value,
+#' solution, number of iterations and evaluations, convergence and message.
+#' @export
+get_output_data <- function(package_name, opti_output) {
+  results <- c(solution = NULL, value = NULL, number_of_iterations = "-",
+               number_of_evaluations = "-", convergence = "-", message = "-")
+  if (package_name == "GA") {
+    solution <- opti_output@solution
+    results["value"] <- opti_output@fitnessValue
+    results["number_of_iterations"] <- opti_output@iter
+  }
+  else if (package_name == "DEoptim") {
+    solution <- opti_output$optim$bestmem
+    results["value"] <- opti_output$optim$bestval
+    results["number_of_iterations"] <- opti_output$optim$iter
+    results["number_of_evaluations"] <- opti_output$optim$nfeval
+  }
+  else {
+    tryCatch(
+      {
+        solution <- opti_output$par
+        results["value"] <- opti_output$value
+      },
+      error = function(e) {
+        warning("Unable to identify the optimal value and solution in optimization output!")
+      }
+    )
+    tryCatch(
+      {
+        results["convergence"] <- opti_output$convergence
+        results["message"] <- opti_output$message
+      },
+      error = function(e) {}
+    )
+  }
+  if (package_name == "nloptr") {
+    results["number_of_iterations"] <- opti_output$iter
+  }
+  else if (package_name == "ABCoptim") {
+    results["number_of_iterations"] <- opti_output$counts
+  }
+  else if (package_name != "GA" & package_name != "DEoptim" & package_name != "ABCoptim") {
+    tryCatch(
+      {
+        results["number_of_iterations"] <- opti_output$counts[2]
+        results["number_of_evaluations"] <- opti_output$counts[1]
+      },
+      error = function(e) {}
+    )
+  }
+  results["solution"] <- paste("(", paste(solution, collapse = ", "), ")", sep = "")
+
+  # reorder and save to a dataframe
+  df <- data.frame(value = results["value"], solution = results["solution"],
+                   number_of_iterations = results["number_of_iterations"],
+                   number_of_evaluations = results["number_of_evaluations"],
+                   convergence = results["convergence"],
+                   message = results["message"])
+
+  return (df)
 }
 

@@ -93,6 +93,11 @@ print(get_input_data("ABCoptim",
                           ub=upper_bound, criter=.Machine$integer.max, 
                           maxCycle=100)))
 
+result <- psoptim(par=starting_point, fn=Rosenbrock, lower = lower_bound, 
+                  upper = upper_bound, control = list(maxit = 200, reltol = 0))
+print(result)
+get_output_data("pso", result)
+
 
 help("optim")
 # optim: par, fn, kwargs = (method, lower, upper, control[maxit])
