@@ -89,11 +89,6 @@ run_and_save(package = "ABCoptim", optimization_method = "abc_optim",
              output_file = "/home/viki/Dokumenty/vikine_skolske/bakalarka_final/export.csv",
              objective_name = "Rosenbrock 2D")
 
-print(get_input_data("ABCoptim", 
-                     list(starting_point, fn=Rosenbrock, lb=lower_bound, 
-                          ub=upper_bound, criter=.Machine$integer.max, 
-                          maxCycle=100)))
-
 result <- psoptim(par=starting_point, fn=Rosenbrock, lower = lower_bound, 
                   upper = upper_bound, control = list(maxit = 200, reltol = 0))
 get_output_data("pso", result)
