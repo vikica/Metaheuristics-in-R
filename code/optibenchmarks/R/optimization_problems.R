@@ -2,7 +2,7 @@
 
 
 # The installation of package "smoof" may be necessary to create 
-# multidimensional Rosenbrock function
+# a multidimensional Rosenbrock function
 # install.packages("smoof")
 library("smoof")  
 
@@ -19,7 +19,7 @@ library("smoof")
 #' @param x The vectorized experiment.
 #' @return Minus logarithm of the calculated determinant of Fisher information
 #' matrix. If the determinant is smaller than 1e-100, the log of 1e-100 is 
-#' returned in order to avoid calculating the logarithm of 0.
+#' returned in order to avoid calculating logarithm of 0.
 #' @export
 Lall <- function(x) {
   th <- c(-1, 2, 0.5, 2, 0.1, 0.01)
@@ -49,7 +49,7 @@ Lall <- function(x) {
 #' @param x The vectorized experiment.
 #' @return Minus logarithm of the calculated determinant of Fisher information
 #' matrix. If the determinant is smaller than 1e-100, the log of 1e-100 is 
-#' returned in order to avoid calculating the logarithm of 0.
+#' returned in order to avoid calculating logarithm of 0.
 #' @export
 Duarte <- function(x) {
   th <- c(0.5, -0.2, 0.5, -0.2, -0.1, 0.2, -0.1, 0.2, -0.1, 0.2)

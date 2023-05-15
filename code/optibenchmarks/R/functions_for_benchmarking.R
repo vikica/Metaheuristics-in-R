@@ -134,7 +134,8 @@ load_csv_data <- function(path_to_csv_file) {
 #' @param parameters_for_optimization_method A list containing all parameters
 #' that would normally be passed to the provided optimization method.
 #' @param time_units character string. Units for execution time measurement,
-#' the same format is supported as in (base) difftime function.
+#' the same format is supported as in (base) difftime function. Default value is
+#' "secs".
 #' @return A dataframe containing the data about the optimization run and
 #' the optimization results.
 #' @examples
@@ -179,7 +180,8 @@ get_results <- function(package, optimization_method,
 
   # fill the dataframe
   df <- data.frame(R_package = package, method = optimization_method)
-  df <- cbind(df, input_data, output_data)
+  df <- cbind(df, input_data, output_data,
+              data.frame(execution_time = execution_time, time_units = time_units))
 
   return(df)
 }
