@@ -159,7 +159,13 @@ get_results <- function(package, optimization_method,
   execution_time <- difftime(end_time, start_time, units = time_units)
 
   # prepare the data
-  input_data <- get_input_data(package, parameters_for_optimization_method)
+  if (package %in% c("stats", "GA", "DEoptim", "pso", "ABCoptim", "nloptr")) {
+    input_data <- get_input_data(package, parameters_for_optimization_method)
+  }
+  else {
+    input_data <- c(starting_point = "?", lower_bound = "?", upper_bound = "?",
+                    max_iterations = "?", max_evaluations = "?")
+  }
 
   # fill the dataframe
   df <- data.frame(R_package = package, method = optimization_method,
@@ -178,21 +184,38 @@ get_results <- function(package, optimization_method,
                    # execution_time = c(execution_time),
                    # units = c(units)
   )
+  df <- cbind(df, input_data)
   return(df)
 }
 
 
+#' Get the optimization input data
+#'
+#' Categorize the input data from input_list into information about
+#' starting point, lower and upper bound, and maximum number of
+#' iterations/evaluations.
+#' It is only suitable for packages "GA", "DEoptim", pso", "ABCoptim", "nloptr",
+#' and the function "optim" from package "stats".
+#'
+#' @param package The name of the package that the optimization method
+#' is supposed to be loaded from.
+#' @param parameters_for_optimization_method A list containing all parameters
+#' that would normally be passed to the provided optimization method.
+#' @return A dataframe containing starting_point, lower_bound, upper_bound,
+#' max_iterations and max_evaluations.
+#' @export
 get_input_data <- function(package_name, input_list) {
 
   # get the starting point
   starting_point <- "-"
-  if (package_name %in% c("optim", "pso", "ABCoptim")) {
-    tryCatch(
-      {starting_point <- input_list[["par"]]},
-      error = function(e) {
-        starting_point <- input_list[[1]]
-      }
-    )
+  if (package_name %in% c("stats", "pso", "ABCoptim")) {
+    starting_point <- input_list[["par"]]
+  }
+  else if (package_name == "nloptr") {
+    starting_point <- input_list[["x0"]]
+  }
+  if (is.null(starting_point)) {
+    starting_point <- input_list[[1]]
   }
   starting_point <- paste("(", paste(starting_point, collapse = ", "), ")",
                           sep = "")
@@ -221,24 +244,42 @@ get_input_data <- function(package_name, input_list) {
   lower_bound <- paste("(", paste(lower_bound, collapse = ", "), ")", sep = "")
   upper_bound <- paste("(", paste(upper_bound, collapse = ", "), ")", sep = "")
 
+  # get max iterations/evaluations
+  max_iterations <- "-"
+  max_evaluations <- "-"
+  if (package_name == "stats" | package_name == "pso") {
+    tryCatch(
+      {max_iterations <- input_list[["control"]][["maxit"]]},
+      error = function(e) {max_iterations <- "default"}
+    )
+  }
+  else if (package_name == "GA") {
+    tryCatch(
+      {max_iterations <- input_list[["maxiter"]]},
+      error = function(e) {max_iterations <- "default"}
+    )
+  }
+  else if (package_name == "DEoptim") {
+    tryCatch(
+      {max_iterations <- input_list[["control"]][["itermax"]]},
+      error = function(e) {max_iterations <- "default"}
+    )
+  }
+  else if (package_name == "ABCoptim") {
+    tryCatch(
+      {max_iterations <- input_list[["maxCycle"]]},
+      error = function(e) {max_iterations <- "default"}
+    )
+  }
+  else {
+    tryCatch(
+      {max_evaluations <- input_list[["control"]][["maxeval"]]},
+      error = function(e) {max_evaluations <- "default"}
+    )
+  }
 
-
-
-  # optim: par, fn, kwargs = (method, lower, upper, control[maxit])
-
-
-  #"ga" type, fitness, lower, upper, kwargs=maxiter
-
-  # "DEoptim" fn, lower, upper, control[itermax]
-
-  # "pso" par, fn, kwargs = (lower, upper, control[maxit])
-
-  # "cobyla" x0, fn, kwargs = (lower, upper), control[]
-
-  # "abc_optim" par, fn, kwargs = (lb, ub, maxCycle, criter)
-
-  return (c(starting_point = starting_point, lower_bound = lower_bound,
-            upper_bound = upper_bound))
-
+  return (data.frame(starting_point = starting_point, lower_bound = lower_bound,
+            upper_bound = upper_bound, max_iterations = max_iterations,
+            max_evaluations = max_evaluations))
 }
 

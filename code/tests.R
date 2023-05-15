@@ -76,7 +76,7 @@ run_and_save(package = "nloptr", optimization_method = "bobyqa",
 
 run_and_save(package = "nloptr", optimization_method = "sbplx", 
              parameters_for_optimization_method = list(
-               x0=starting_point, fn=Rosenbrock, lower = lower_bound, 
+               starting_point, fn=Rosenbrock, lower = lower_bound, 
                upper = upper_bound, control = list(maxeval = 500, xtol_rel = 0)),
              output_file = "/home/viki/Dokumenty/vikine_skolske/bakalarka_final/export.csv",
              objective_name = "Rosenbrock 2D")
@@ -89,7 +89,7 @@ run_and_save(package = "ABCoptim", optimization_method = "abc_optim",
              objective_name = "Rosenbrock 2D")
 
 print(get_input_data("ABCoptim", 
-                     list(par=starting_point, fn=Rosenbrock, lb=lower_bound, 
+                     list(starting_point, fn=Rosenbrock, lb=lower_bound, 
                           ub=upper_bound, criter=.Machine$integer.max, 
                           maxCycle=100)))
 
@@ -115,7 +115,3 @@ help("nl.opts")
 help("abc_optim")
 # par, fn, kwargs = (lb, ub, maxCycle, criter)
 # class: value, par, counts
-
-pck <- "pso"
-pck %in% c("optim", "pso", "ABCoptim")
-
