@@ -136,6 +136,13 @@ load_csv_data <- function(path_to_csv_file) {
 #' @param time_units character string. Units for execution time measurement,
 #' the same format is supported as in (base) difftime function. Default value is
 #' "secs".
+#' @param objective_name A character string, default is NULL.
+#' The name of the objective function. This is only needed to document the
+#' name of objective in the dataframe (as it is hard to get the name of
+#' the objective directly from parameters_for_optimization_method).
+#' The value of objective_name does not influence the optimization.
+#' However, the provided objective_name should correspond to the objective
+#' passed in parameters_for_optimization_method.
 #' @return A dataframe containing the data about the optimization run and
 #' the optimization results.
 #' @examples
@@ -148,7 +155,8 @@ load_csv_data <- function(path_to_csv_file) {
 #' @export
 get_results <- function(package, optimization_method,
                         parameters_for_optimization_method,
-                        time_units = "secs") {
+                        time_units = "secs",
+                        objective_name = NULL) {
 
   # load the package
   tryCatch(
@@ -180,6 +188,9 @@ get_results <- function(package, optimization_method,
 
   # fill the dataframe
   df <- data.frame(R_package = package, method = optimization_method)
+  if (!is.null(objective_name)) {
+    df <- cbind(df, objective_name = objective_name)
+  }
   df <- cbind(df, input_data, output_data,
               data.frame(execution_time = execution_time, time_units = time_units))
 

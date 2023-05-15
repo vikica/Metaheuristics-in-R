@@ -1,11 +1,14 @@
-# In this script, the best known solutions to our optimization problems 
+# In this script, the best known solutions to our optimization problems
 # (problem A and problem B from optimization_problems.R) are stored as variables
+
+
+source("/home/viki/Dokumenty/vikine_skolske/bakalarka_final/optibenchmarks/R/optimization_problems.R")
 
 
 #' Converts a string representation of a numeric vector (originated in R output)
 #' to a numeric vector.
 #'
-#' @param solution_string A string to convert to a numeric vector. 
+#' @param solution_string A string to convert to a numeric vector.
 #' The string should contain whitespace-separated numbers arranged in rows,
 #' starting with the row numbering.
 #' @param numbers_in_row The number of numbers in each row of the string.
@@ -26,20 +29,20 @@ string_to_vector <- function(solution_string, numbers_in_row) {
 
 
 # Problem A:
-optimum_Lall_N6 <- Lall(c(1.00000000, -1.00000000, -1.00000000,  1.00000000,  
-                          0.14312560, 1.00000000,  1.00000000, -0.02572633,  
+optimum_Lall_N6 <- Lall(c(1.00000000, -1.00000000, -1.00000000,  1.00000000,
+                          0.14312560, 1.00000000,  1.00000000, -0.02572633,
                           -1.00000000, -0.69898941, 0.05790519,  0.06613830))
-optimum_Lall_N24 <- Lall(c(1.00000000, -1.00000000,  1.00000000, -1.00000000,  
+optimum_Lall_N24 <- Lall(c(1.00000000, -1.00000000,  1.00000000, -1.00000000,
                            1.00000000, -1.00000000,  1.00000000, -1.00000000,
-                           -1.00000000,  1.00000000, -1.00000000,  1.00000000, 
                            -1.00000000,  1.00000000, -1.00000000,  1.00000000,
-                           -0.04289278,  1.00000000, -0.04289278,  1.00000000, 
+                           -1.00000000,  1.00000000, -1.00000000,  1.00000000,
+                           -0.04289278,  1.00000000, -0.04289278,  1.00000000,
                            -0.04289278,  1.00000000,  0.37938009, -1.00000000,
-                           1.00000000, -0.10040816,  1.00000000, -0.10040816,  
+                           1.00000000, -0.10040816,  1.00000000, -0.10040816,
                            1.00000000, -0.10040816,  0.71366331,  1.00000000,
-                           0.71366331, 1.00000000, -1.00000000, -1.00000000, 
+                           0.71366331, 1.00000000, -1.00000000, -1.00000000,
                            -1.00000000, -1.00000000,  0.08946214,  0.09079446,
-                           0.08946214,  0.09079446,  0.08946214,  0.09079446, 
+                           0.08946214,  0.09079446,  0.08946214,  0.09079446,
                            -1.00000000, -0.02997077, -1.00000000, -0.02997077))
 optimum_Lall_N96 <- Lall(string_to_vector("[1,]  1.0000000000 -1.0000000000
 [2,]  1.0000000000 -1.0000000000
