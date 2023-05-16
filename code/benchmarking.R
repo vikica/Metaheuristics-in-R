@@ -14,7 +14,7 @@ library("smoof")
 # Rosenbrock
 dimension <- 3
 Rosenbrock <- makeRosenbrockFunction(dimensions = dimension)
-file_path <- sprintf("/home/viki/Dokumenty/vikine_skolske/bakalarka_final/Metaheuristics-in-R/results/Rosenbrock%dD.csv",
+file_path <- sprintf("/home/viki/Dokumenty/vikine_skolske/bakalarka_final/Metaheuristics-in-R/results/Rosenbrock%dD_9.csv",
                      dimension)
 # set the lower and upper bound
 lower_bound <- rep(-5, dimension)
@@ -31,24 +31,24 @@ for (i in 1:20) {
 for (starting_point in starting_points) {
   # the desired execution time time_cluster is to be set,
   # as well as number of iterations/evaluations in each method
-  time_cluster <- 0.001
+  time_cluster <- 10
   df <- data.frame()
 
   # optim L-BFGS-B
-  opti_params_lbfgs <- list(par = starting_point, fn = Rosenbrock,
-                            method = "L-BFGS-B", lower = lower_bound,
-                            upper = upper_bound,
-                            control = list(maxit = 7, factr = 0))
-  result <- get_results(package = "stats", optimization_method = "optim",
-                        parameters_for_optimization_method = opti_params_lbfgs,
-                        time_units = "secs", objective_name = "Rosenbrock")
-  result <- cbind(result, time_cluster)
-  df <- result
+  # opti_params_lbfgs <- list(par = starting_point, fn = Rosenbrock,
+  #                           method = "L-BFGS-B", lower = lower_bound,
+  #                           upper = upper_bound,
+  #                           control = list(maxit = 200000, factr = 0))
+  # result <- get_results(package = "stats", optimization_method = "optim",
+  #                       parameters_for_optimization_method = opti_params_lbfgs,
+  #                       time_units = "secs", objective_name = "Rosenbrock")
+  # result <- cbind(result, time_cluster)
+  # df <- result
 
   # ga
   opti_params_ga <- list(type=c("real-valued"), fitness = minus_Rosenbrock,
                          lower = lower_bound, upper = upper_bound,
-                         maxiter = 1)
+                         maxiter = 4360)
   result <- get_results(package = "GA", optimization_method = "ga",
                         parameters_for_optimization_method = opti_params_ga,
                         time_units = "secs", objective_name = "Rosenbrock")
@@ -56,19 +56,19 @@ for (starting_point in starting_points) {
   df <- rbind(df, result)
 
   # DEoptim
-  opti_params_DEoptim <- list(fn = Rosenbrock, lower = lower_bound,
-                              upper = upper_bound,
-                              control = list(itermax = 1, reltol = 0))
-  result <- get_results(package = "DEoptim", optimization_method = "DEoptim",
-                        parameters_for_optimization_method = opti_params_DEoptim,
-                        time_units = "secs", objective_name = "Rosenbrock")
-  result <- cbind(result, time_cluster)
-  df <- rbind(df, result)
+  # opti_params_DEoptim <- list(fn = Rosenbrock, lower = lower_bound,
+  #                             upper = upper_bound,
+  #                             control = list(itermax = 1880, reltol = 0))
+  # result <- get_results(package = "DEoptim", optimization_method = "DEoptim",
+  #                       parameters_for_optimization_method = opti_params_DEoptim,
+  #                       time_units = "secs", objective_name = "Rosenbrock")
+  # result <- cbind(result, time_cluster)
+  # df <- rbind(df, result)
 
   # psoptim
   opti_params_psoptim <- list(par=starting_point, fn=Rosenbrock,
                               lower = lower_bound, upper = upper_bound,
-                              control = list(maxit = 3, reltol = 0))
+                              control = list(maxit = 25290, reltol = 0))
   result <- get_results(package = "pso", optimization_method = "psoptim",
                         parameters_for_optimization_method = opti_params_psoptim,
                         time_units = "secs", objective_name = "Rosenbrock")
@@ -76,9 +76,9 @@ for (starting_point in starting_points) {
   df <- rbind(df, result)
 
   # abc_optim
-  opti_params_abc_optim <- list(par=starting_point, fn=Rosenbrock,
-                                lb=lower_bound, ub=upper_bound,
-                                criter=.Machine$integer.max, maxCycle=2)
+  opti_params_abc_optim <- list(par = starting_point, fn= Rosenbrock,
+                                lb = lower_bound, ub = upper_bound,
+                                criter = .Machine$integer.max, maxCycle = 6700)
   result <- get_results(package = "ABCoptim", optimization_method = "abc_optim",
                         parameters_for_optimization_method = opti_params_abc_optim,
                         time_units = "secs", objective_name = "Rosenbrock")
@@ -86,9 +86,9 @@ for (starting_point in starting_points) {
   df <- rbind(df, result)
 
   # sbplx
-  opti_params_sbplx <- list(x0=starting_point, fn=Rosenbrock,
+  opti_params_sbplx <- list(x0 = starting_point, fn = Rosenbrock,
                             lower = lower_bound, upper = upper_bound,
-                            control = list(maxeval = 1, xtol_rel = 0))
+                            control = list(maxeval = 1000000, xtol_rel = 0))
   result <- get_results(package = "nloptr", optimization_method = "sbplx",
                         parameters_for_optimization_method = opti_params_sbplx,
                         time_units = "secs", objective_name = "Rosenbrock")
@@ -96,24 +96,25 @@ for (starting_point in starting_points) {
   df <- rbind(df, result)
 
   # cobyla
-  opti_params_cobyla <- list(x0=starting_point, fn=Rosenbrock,
-                             lower = lower_bound, upper = upper_bound,
-                             control = list(maxeval = 1, xtol_rel = 0))
-  result <- get_results(package = "nloptr", optimization_method = "cobyla",
-                        parameters_for_optimization_method = opti_params_cobyla,
-                        time_units = "secs", objective_name = "Rosenbrock")
-  result <- cbind(result, time_cluster)
-  df <- rbind(df, result)
+  # opti_params_cobyla <- list(x0 = starting_point, fn = Rosenbrock,
+  #                            lower = lower_bound, upper = upper_bound,
+  #                            control = list(maxeval = 150000, xtol_rel = 0))
+  # result <- get_results(package = "nloptr", optimization_method = "cobyla",
+  #                       parameters_for_optimization_method = opti_params_cobyla,
+  #                       time_units = "secs", objective_name = "Rosenbrock")
+  # result <- cbind(result, time_cluster)
+  # df <- rbind(df, result)
 
   # bobyqa
-  opti_params_bobyqa <- list(x0=starting_point, fn=Rosenbrock,
-                             lower = lower_bound, upper = upper_bound,
-                             control = list(maxeval = 1, xtol_rel = 0))
-  result <- get_results(package = "nloptr", optimization_method = "bobyqa",
-                        parameters_for_optimization_method = opti_params_bobyqa,
-                        time_units = "secs", objective_name = "Rosenbrock")
-  result <- cbind(result, time_cluster)
-  df <- rbind(df, result)
+  # opti_params_bobyqa <- list(x0 = starting_point, fn = Rosenbrock,
+  #                            lower = lower_bound, upper = upper_bound,
+  #                            control = list(maxeval = 1000000,
+  #                                           xtol_rel = 0))
+  # result <- get_results(package = "nloptr", optimization_method = "bobyqa",
+  #                       parameters_for_optimization_method = opti_params_bobyqa,
+  #                       time_units = "secs", objective_name = "Rosenbrock")
+  # result <- cbind(result, time_cluster)
+  # df <- rbind(df, result)
 
 
   # save all benchmark data for this time_cluster

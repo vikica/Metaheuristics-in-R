@@ -80,13 +80,13 @@ prepare_data <- function(df, what_to_do_with_value, small_const_to_add = 0,
 #' Create a column with difference from the best known minimum value
 #' ("global optimum").
 #'
-#' @param df: A dataframe containing a column "minimum_value"
+#' @param df: A dataframe containing a column "value"
 #' @param best_known_value: The best known minimum value for the given
 #' optimization problem.
 #'
 #' @return: A new column "difference_from_best_known_val"
 create_difference_from_the_best_known_value <- function(df, best_known_value) {
-  df["difference_from_best_known_val"] <- df["minimum_value"] - best_known_value
+  df["difference_from_best_known_val"] <- df["value"] - best_known_value
   return(df["difference_from_best_known_val"])
 }
 
@@ -135,6 +135,9 @@ draw_plot <- function(data, title, breaks, y_label, limits = NULL) {
                   "ga" = "ga", "psoptim" = "psoptim", "cobyla" = "cobyla",
                   "bobyqa" = "bobyqa", "sbplx" = "sbplx",
                   "abc_optim" = "abc_optim")
+  # define the color palette
+  palette <- c("#fccfd0", "#7EC8E3", "#4bccc3", "#A28EA2", "#485df7", "#EC1C20",
+               "#91052B", "#000C66")
 
   ggplot() +
     geom_point(data = data.frame(x = data$log_execution_time,
@@ -155,11 +158,11 @@ draw_plot <- function(data, title, breaks, y_label, limits = NULL) {
     scale_x_continuous(breaks = breaks, limits = limits) +
     xlab("log10 of (execution time [s])") +
     ylab(y_label) +
-    scale_color_discrete() +
-    scale_fill_discrete()
+    scale_color_manual(values = c(palette)) +
+    scale_fill_manual(values = c(palette))
+    # scale_color_discrete() +
+    # scale_fill_discrete()
 }
-
-
 
 
 # load the data
@@ -167,7 +170,8 @@ Rosenbrock3D <- read.csv("results/Rosenbrock3D.csv")
 Rosenbrock3D_ready <- prepare_data(Rosenbrock3D,
                                    what_to_do_with_value = "transform log",
                                    small_const_to_add = 1e-6)
-draw_plot(Rosenbrock3D_ready, "Rosenbrock 3D", breaks=c(-3, -2),
+draw_plot(Rosenbrock3D_ready, "Rosenbrock 3D", breaks=c(-3, -2, -1, 0, 1),
           y_label = "log10 of (minimum value+1e-6)")
+
 
 
