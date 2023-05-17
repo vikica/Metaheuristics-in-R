@@ -17,7 +17,7 @@ library("dplyr")
 #' apply logarithm on the column 'execution_time' (x-axis),
 #' transform the minimum value according to rule provided in
 #' parameter 'what_to_do_with_y', add medians of x and y values within each
-#' time_cluster.
+#' time_cluster, and sort the dataframe by method.
 #'
 #' @param df: A dataframe containing data about optimization results. It must
 #' contain columns "value", "method", "R_package", "execution_time",
@@ -73,6 +73,28 @@ prepare_data <- function(df, what_to_do_with_value, small_const_to_add = 0,
   # time_cluster.
   df <- add_medians(df)
 
+  # sort the dataframe by method
+  df <- sort_by_method(df)
+
+  return(df)
+}
+
+
+#' Sort dataframe by colum 'method'
+#'
+#' Sort dataframe by colum 'method', using a custom order
+#'
+#' @param df: A dataframe containing data about optimization results. It must
+#' contain column "method" with possible values "ga", "DEoptim", "abc_optim",
+#' "psoptim", "optim", "sbplx", "cobyla", "bobyqa".
+#' @return df: A sorted dataframe by method.
+sort_by_method <- function(df) {
+  # Define the custom order
+  custom_order <- c("ga", "DEoptim", "abc_optim", "psoptim", "optim", "sbplx", "cobyla", "bobyqa")
+  # Convert the "method" column to a factor with the custom order
+  df$method <- factor(df$method, levels = custom_order)
+  # Sort the dataframe
+  df <- df[order(df$method), ]
   return(df)
 }
 
@@ -129,17 +151,26 @@ remove_method <- function(df, method_name) {
 }
 
 
-draw_plot <- function(data, title, breaks, y_label, limits = NULL) {
+draw_plot <- function(data, title, breaks, y_label, best_known_val,
+                      limits = NULL, label_line = "") {
   # rename the methods
-  new_labels <- c("optim" = "optim L-BFGS-B", "DEoptim" = "DEoptim",
-                  "ga" = "ga", "psoptim" = "psoptim", "cobyla" = "cobyla",
-                  "bobyqa" = "bobyqa", "sbplx" = "sbplx",
-                  "abc_optim" = "abc_optim")
+  new_labels <- c("optim" = "L-BFGS-B", "DEoptim" = "DE",
+                  "ga" = "GA", "psoptim" = "PSO", "cobyla" = "COBYLA",
+                  "bobyqa" = "BOBYQA", "sbplx" = "SBPLX",
+                  "abc_optim" = "ABC")
   # define the color palette
   palette <- c("#fccfd0", "#7EC8E3", "#4bccc3", "#A28EA2", "#485df7", "#EC1C20",
                "#91052B", "#000C66")
+  if (is.null(limits)) {
+    min_x <- min(data$log_execution_time)
+    max_x <- max(data$log_execution_time)
+    limits <- c(min_x, max_x)
+  }
 
   ggplot() +
+    geom_hline(yintercept = best_known_val, linetype = "dashed", color = "grey") +
+    geom_text(aes(x = min_x, y = -6, label = label_line), hjust = 0,
+              vjust = -0.5, color = "grey", size = 3.2) +
     geom_point(data = data.frame(x = data$log_execution_time,
                                  y = data$y,
                                  method = data$method),
@@ -153,15 +184,12 @@ draw_plot <- function(data, title, breaks, y_label, limits = NULL) {
                                  method = data$method),
                aes(x, y, fill = method, group = method),
                size = 3.5, shape = 24, colour = "white") +
-    # theme_bw() +
     labs(title = title) +
     scale_x_continuous(breaks = breaks, limits = limits) +
     xlab("log10 of (execution time [s])") +
     ylab(y_label) +
-    scale_color_manual(values = c(palette)) +
-    scale_fill_manual(values = c(palette))
-    # scale_color_discrete() +
-    # scale_fill_discrete()
+    scale_color_manual(values = c(palette), labels = new_labels) +
+    scale_fill_manual(values = c(palette), labels = new_labels)
 }
 
 
@@ -171,7 +199,19 @@ Rosenbrock3D_ready <- prepare_data(Rosenbrock3D,
                                    what_to_do_with_value = "transform log",
                                    small_const_to_add = 1e-6)
 draw_plot(Rosenbrock3D_ready, "Rosenbrock 3D", breaks=c(-3, -2, -1, 0, 1),
-          y_label = "log10 of (minimum value+1e-6)")
+          y_label = "log10 of (minimum value+1e-6)",
+          best_known_val = -6, label_line = "global minimum")
+ggsave(filename = "results/plots/Rosenbrock3D.png", width = 7, height = 4,
+       dpi=700)
 
+Rosenbrock10D <- read.csv("results/Rosenbrock10D.csv")
+Rosenbrock10D_ready <- prepare_data(Rosenbrock10D,
+                                    what_to_do_with_value = "transform log",
+                                    small_const_to_add = 1e-6)
+draw_plot(Rosenbrock10D_ready, "Rosenbrock 10D", breaks=c(-2, -1, 0, 1, 2),
+          y_label = "log10 of (minimum value+1e-6)",
+          best_known_val = -6, label_line = "global minimum")
+ggsave(filename = "results/plots/Rosenbrock10D.png", width = 7, height = 4,
+       dpi=700)
 
 

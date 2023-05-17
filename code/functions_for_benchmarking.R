@@ -191,7 +191,10 @@ get_results <- function(package, optimization_method,
   if (!is.null(objective_name)) {
     df <- cbind(df, objective_name = objective_name)
   }
-  df <- cbind(df, input_data, output_data,
+  all_params <- paste(names(parameters_for_optimization_method),
+                      parameters_for_optimization_method, sep = " = ",
+                      collapse = ", ")
+  df <- cbind(df, input_data, all_params, output_data,
               data.frame(execution_time = execution_time, time_units = time_units))
 
   return(df)
