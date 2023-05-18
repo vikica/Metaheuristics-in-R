@@ -169,8 +169,10 @@ remove_method <- function(df, method_name) {
 #' in which case the x-axis is wide enough to display all the values.
 #' @param label_line A label of the horizontal line displaying the expected
 #' global optimum.
-draw_plot <- function(data, title, breaks, y_label, best_known_val,
-                      limits = NULL, label_line = "") {
+#' @param add_tick_minimum A boolean indicating whether a tick is to be added
+#' next to the horizontal line of global minimum.
+draw_plot <- function(data, title, breaks, y_label, best_known_val = NULL,
+                      limits = NULL, label_line = "", add_tick_minimum = FALSE) {
   # rename the methods
   new_labels <- c("optim" = "L-BFGS-B", "DEoptim" = "DE",
                   "ga" = "GA", "psoptim" = "PSO", "cobyla" = "COBYLA",
@@ -185,10 +187,33 @@ draw_plot <- function(data, title, breaks, y_label, best_known_val,
     limits <- c(min_x, max_x)
   }
 
+  # Get default y-breaks values
+  default_breaks <- pretty(data$y)
+  if (add_tick_minimum & !is.null(best_known_val)) {
+    # Add the expected global minimum tick
+    y_breaks <- c(default_breaks, best_known_val)
+    truncated_best_val <- as.character(round(best_known_val, 2))
+    y_tick_labels <- c(as.character(default_breaks),
+                       paste("~", truncated_best_val))
+  }
+  else {
+    y_breaks <- default_breaks
+    y_tick_labels <- default_breaks
+  }
+
+  hline <- NULL
+  line_label <- NULL
+  if (!is.null(best_known_val)) {
+    hline <- geom_hline(yintercept = best_known_val, linetype = "dashed",
+                        color = "grey")
+    line_label <- geom_text(aes(x = min_x, y = best_known_val,
+                                label = label_line), hjust = 0, vjust = -0.5,
+                            color = "grey", size = 3.2)
+  }
+
   ggplot() +
-    geom_hline(yintercept = best_known_val, linetype = "dashed", color = "grey") +
-    geom_text(aes(x = min_x, y = -6, label = label_line), hjust = 0,
-              vjust = -0.5, color = "grey", size = 3.2) +
+    hline +
+    line_label +
     geom_point(data = data.frame(x = data$log_execution_time,
                                  y = data$y,
                                  method = data$method),
@@ -205,6 +230,7 @@ draw_plot <- function(data, title, breaks, y_label, best_known_val,
     labs(title = title) +
     scale_x_continuous(breaks = breaks, limits = limits) +
     xlab("log10 of (execution time [s])") +
+    scale_y_continuous(breaks = y_breaks, labels = y_tick_labels) +
     ylab(y_label) +
     scale_color_manual(values = c(palette), labels = new_labels) +
     scale_fill_manual(values = c(palette), labels = new_labels)
@@ -252,3 +278,36 @@ draw_plot(Rosenbrock50D_ready, "Rosenbrock 50D", breaks=c(-2, -1, 0, 1, 2),
           best_known_val = -6, label_line = "global minimum")
 ggsave(filename = "results/plots/Rosenbrock50D.png", width = 7, height = 4.5,
        dpi=700)
+
+
+LallN6 <- read.csv("results/LallN6.csv")
+LallN6_ready <- prepare_data(LallN6,
+                             what_to_do_with_value = "nothing",
+                             small_const_to_add = 0)
+draw_plot(LallN6_ready, "Problem A, N=6", breaks=c(-3, -2, -1, 0, 1),
+          y_label = "-ln(det(FIM))",
+          best_known_val = optimum_Lall_N6, label_line = "global minimum",
+          add_tick_minimum = TRUE)
+ggsave(filename = "results/plots/LallN6.png", width = 7, height = 4.5,
+       dpi=700)
+print(optimum_Lall_N6)
+
+LallN6_ready <- prepare_data(LallN6, what_to_do_with_value = "make differences",
+                             best_known_value = optimum_Lall_N6,
+                             small_const_to_add = 1e-6)
+draw_plot(LallN6_ready, "Problem A, N=6", breaks=c(-3, -2, -1, 0, 1),
+          y_label = "log10 of (difference from the expected global minimum + 1e-6)",
+          best_known_val = -6, label_line = "zero difference")
+ggsave(filename = "results/plots/LallN6_2.png", width = 7, height = 4.5,
+       dpi=700)
+
+LallN24 <- read.csv("results/LallN24_4.csv")
+LallN24_ready <- prepare_data(LallN24,
+                             what_to_do_with_value = "nothing",
+                             small_const_to_add = 0)
+draw_plot(LallN24_ready, "Problem A, N=24", breaks=c(-2, -1, 0, 1, 2),
+          y_label = "-ln(det(FIM))", best_known_val = optimum_Lall_N24,
+          label_line = "global minimum", add_tick_minimum = TRUE)
+ggsave(filename = "results/plots/LallN24.png", width = 7, height = 4.5,
+       dpi=700)
+print(optimum_Lall_N6)
