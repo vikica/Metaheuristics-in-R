@@ -5,7 +5,7 @@
 setwd("/home/viki/Dokumenty/vikine_skolske/bakalarka_final/Metaheuristics-in-R")
 source("code/best_solutions.R")
 # installation may be necessary
-# install.packages("dplyr")
+# install.packages("dplyr", "ggplot2")
 library("ggplot2")
 library("dplyr")
 
@@ -151,6 +151,24 @@ remove_method <- function(df, method_name) {
 }
 
 
+#' Draw plot of optimization benchmarking data
+#'
+#' @param data A dataframe prepared for plotting (must contain the columns:
+#' method, log_execution_time, y, median_execution_time, median_y), for example
+#' result of data preprocessing by the function 'prepare_data'.
+#' @param title The title of the plot.
+#' @param breaks A vector of the breaks on x-axis.
+#' @param y_label The text label of the y-axis.
+#' @param best_known_val The corresponding value of the global optimum in the
+#' plot, or expected global optimum. In case the values in column y were
+#' transformed, the same transformation on best_known_val is expected to be
+#' entered. For example, if y is a logarithm of the value, best_known_val
+#' should also be a logarithm (of the global optimum). This value is used for
+#' plotting a horizontal grey line.
+#' @param limits A vector containing limits on x-axis displayed. Default is NULL,
+#' in which case the x-axis is wide enough to display all the values.
+#' @param label_line A label of the horizontal line displaying the expected
+#' global optimum.
 draw_plot <- function(data, title, breaks, y_label, best_known_val,
                       limits = NULL, label_line = "") {
   # rename the methods
@@ -193,7 +211,8 @@ draw_plot <- function(data, title, breaks, y_label, best_known_val,
 }
 
 
-# load the data
+# load the optimization benchmarking data and plot them
+
 Rosenbrock3D <- read.csv("results/Rosenbrock3D.csv")
 Rosenbrock3D_ready <- prepare_data(Rosenbrock3D,
                                    what_to_do_with_value = "transform log",
@@ -201,7 +220,7 @@ Rosenbrock3D_ready <- prepare_data(Rosenbrock3D,
 draw_plot(Rosenbrock3D_ready, "Rosenbrock 3D", breaks=c(-3, -2, -1, 0, 1),
           y_label = "log10 of (minimum value+1e-6)",
           best_known_val = -6, label_line = "global minimum")
-ggsave(filename = "results/plots/Rosenbrock3D.png", width = 7, height = 4,
+ggsave(filename = "results/plots/Rosenbrock3D.png", width = 7, height = 4.5,
        dpi=700)
 
 Rosenbrock10D <- read.csv("results/Rosenbrock10D.csv")
@@ -211,7 +230,25 @@ Rosenbrock10D_ready <- prepare_data(Rosenbrock10D,
 draw_plot(Rosenbrock10D_ready, "Rosenbrock 10D", breaks=c(-2, -1, 0, 1, 2),
           y_label = "log10 of (minimum value+1e-6)",
           best_known_val = -6, label_line = "global minimum")
-ggsave(filename = "results/plots/Rosenbrock10D.png", width = 7, height = 4,
+ggsave(filename = "results/plots/Rosenbrock10D.png", width = 7, height = 4.5,
        dpi=700)
 
+Rosenbrock20D <- read.csv("results/Rosenbrock20D.csv")
+Rosenbrock20D_ready <- prepare_data(Rosenbrock20D,
+                                    what_to_do_with_value = "transform log",
+                                    small_const_to_add = 1e-6)
+draw_plot(Rosenbrock20D_ready, "Rosenbrock 20D", breaks=c(-2, -1, 0, 1, 2),
+          y_label = "log10 of (minimum value+1e-6)",
+          best_known_val = -6, label_line = "global minimum")
+ggsave(filename = "results/plots/Rosenbrock20D.png", width = 7, height = 4.5,
+       dpi=700)
 
+Rosenbrock50D <- read.csv("results/Rosenbrock50D.csv")
+Rosenbrock50D_ready <- prepare_data(Rosenbrock50D,
+                                    what_to_do_with_value = "transform log",
+                                    small_const_to_add = 1e-6)
+draw_plot(Rosenbrock50D_ready, "Rosenbrock 50D", breaks=c(-2, -1, 0, 1, 2),
+          y_label = "log10 of (minimum value+1e-6)",
+          best_known_val = -6, label_line = "global minimum")
+ggsave(filename = "results/plots/Rosenbrock50D.png", width = 7, height = 4.5,
+       dpi=700)
