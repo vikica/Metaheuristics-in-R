@@ -25,7 +25,8 @@ get_results(package = "stats", optimization_method = "optim",
             parameters_for_optimization_method = list(
               par = c(2, -1), fn = Rosenbrock, method = "L-BFGS-B",
               lower = c(-5, -5), upper = c(5, 5),
-              control=list(maxit=1000)))
+              control=list(maxit=1000)),
+            minimalistic_results = TRUE)
 
 run_and_save(package = "stats", optimization_method = "optim",
              parameters_for_optimization_method = list(
@@ -257,4 +258,3 @@ run_and_save(package = "ABCoptim", optimization_method = "abc_optim",
                criter=.Machine$integer.max, maxCycle=40),
              output_file = "/home/viki/Dokumenty/vikine_skolske/bakalarka_final/export.csv",
              objective_name = "Duarte")
-
