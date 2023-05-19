@@ -48,30 +48,34 @@ prepare_data <- function(df, what_to_do_with_value, small_const_to_add = 0,
   df$execution_time_seconds <- as.numeric(df$execution_time)
   df$time_cluster <- as.numeric(df$time_cluster)
 
-  if (what_to_do_with_value == "nothing") {
-    df['y'] <- df$value
-  }
-  else if (what_to_do_with_value == "transform log") {
+
+  df['y'] <- df$value
+  # add medians of execution times and values within each "cluster":
+  # ...a "cluster" is a set of values sharing the same method and the same
+  # time_cluster.
+  df <- add_medians(df)
+
+  if (what_to_do_with_value == "transform log") {
     # add a small constant to a minimum value
     # (in order to be able to create a nice plot with log axis):
     df['value_plus_small_const'] <-
       df$value + small_const_to_add
     # apply the logarithm (this will be our y):
     df['y'] <- log10(df$value_plus_small_const)
+    df['median_y'] <- log10(df$median_y + small_const_to_add)
   }
-  else {
+  else if (what_to_do_with_value == "make differences") {
     difference <- create_difference_from_the_best_known_value(df, best_known_value)
+    df['y'] <- difference
+    df <- add_medians(df)
     df['y'] <- log10(difference + small_const_to_add)
+    df['median_y'] <- log10(df$median_y + small_const_to_add)
   }
 
   # apply the decadic logarithm on execution time (= x axis):
   df['log_execution_time'] <- log10(df$execution_time)
   df['log_time_cluster'] <- log10(df$time_cluster)
-
-  # add medians of execution times and values within each "cluster":
-  # ...a "cluster" is a set of values sharing the same method and the same
-  # time_cluster.
-  df <- add_medians(df)
+  df['median_execution_time'] <- log10(df$median_execution_time)
 
   # sort the dataframe by method
   df <- sort_by_method(df)
@@ -120,16 +124,16 @@ create_difference_from_the_best_known_value <- function(df, best_known_value) {
 #' that share the same method and the same time_cluster value.
 #'
 #' @param data A dataframe containing columns 'method', 'time_cluster',
-#' 'log_execution_time', 'y'.
+#' 'execution_time', 'y'.
 #
 #' @return data The original dataframe with 2 new columns:
-#' 'median_execution_time': The median of log_execution_time within the cluster,
+#' 'median_execution_time': The median of execution_time within the cluster,
 #' 'median_y': The median of y within the cluster.
 add_medians <- function(data) {
 
   data <- data %>%
     group_by(method, time_cluster) %>%
-    mutate(median_execution_time = median(log_execution_time))
+    mutate(median_execution_time = median(execution_time))
 
   data <- data %>%
     group_by(method, time_cluster) %>%
@@ -159,20 +163,19 @@ remove_method <- function(df, method_name) {
 #' @param title The title of the plot.
 #' @param breaks A vector of the breaks on x-axis.
 #' @param y_label The text label of the y-axis.
-#' @param best_known_val The corresponding value of the global optimum in the
-#' plot, or expected global optimum. In case the values in column y were
-#' transformed, the same transformation on best_known_val is expected to be
-#' entered. For example, if y is a logarithm of the value, best_known_val
-#' should also be a logarithm (of the global optimum). This value is used for
-#' plotting a horizontal grey line.
+#' @param y_line_position The corresponding value of the global optimum in the
+#' plot. This value is used for plotting a horizontal grey line.
 #' @param limits A vector containing limits on x-axis displayed. Default is NULL,
 #' in which case the x-axis is wide enough to display all the values.
 #' @param label_line A label of the horizontal line displaying the expected
 #' global optimum.
 #' @param add_tick_minimum A boolean indicating whether a tick is to be added
 #' next to the horizontal line of global minimum.
-draw_plot <- function(data, title, breaks, y_label, best_known_val = NULL,
-                      limits = NULL, label_line = "", add_tick_minimum = FALSE) {
+#' @param leave_out_ticks A vector of numbers which should be left out from the
+#' ticks on y-axis
+draw_plot <- function(data, title, breaks, y_label, y_line_position = NULL,
+                      limits = NULL, label_line = "", add_tick_minimum = FALSE,
+                      leave_out_ticks = NULL) {
   # rename the methods
   new_labels <- c("optim" = "L-BFGS-B", "DEoptim" = "DE",
                   "ga" = "GA", "psoptim" = "PSO", "cobyla" = "COBYLA",
@@ -189,10 +192,14 @@ draw_plot <- function(data, title, breaks, y_label, best_known_val = NULL,
 
   # Get default y-breaks values
   default_breaks <- pretty(data$y)
-  if (add_tick_minimum & !is.null(best_known_val)) {
+  if (add_tick_minimum & !is.null(y_line_position)) {
+    if (!is.null(leave_out_ticks)) {
+      # remove breaks that are specified by leave_out_ticks
+      default_breaks <- default_breaks[!default_breaks %in% leave_out_ticks]
+    }
     # Add the expected global minimum tick
-    y_breaks <- c(default_breaks, best_known_val)
-    truncated_best_val <- as.character(round(best_known_val, 2))
+    y_breaks <- c(default_breaks, y_line_position)
+    truncated_best_val <- as.character(round(y_line_position, 2))
     y_tick_labels <- c(as.character(default_breaks),
                        paste("~", truncated_best_val))
   }
@@ -203,10 +210,10 @@ draw_plot <- function(data, title, breaks, y_label, best_known_val = NULL,
 
   hline <- NULL
   line_label <- NULL
-  if (!is.null(best_known_val)) {
-    hline <- geom_hline(yintercept = best_known_val, linetype = "dashed",
+  if (!is.null(y_line_position)) {
+    hline <- geom_hline(yintercept = y_line_position, linetype = "dashed",
                         color = "grey")
-    line_label <- geom_text(aes(x = min_x, y = best_known_val,
+    line_label <- geom_text(aes(x = min_x, y = y_line_position,
                                 label = label_line), hjust = 0, vjust = -0.5,
                             color = "grey", size = 3.2)
   }
@@ -231,6 +238,10 @@ draw_plot <- function(data, title, breaks, y_label, best_known_val = NULL,
     scale_x_continuous(breaks = breaks, limits = limits) +
     xlab("log10 of (execution time [s])") +
     scale_y_continuous(breaks = y_breaks, labels = y_tick_labels) +
+    theme(
+      panel.grid.major = element_line(color = "white"),
+      panel.grid.minor = element_blank()
+    ) +
     ylab(y_label) +
     scale_color_manual(values = c(palette), labels = new_labels) +
     scale_fill_manual(values = c(palette), labels = new_labels)
@@ -245,7 +256,7 @@ Rosenbrock3D_ready <- prepare_data(Rosenbrock3D,
                                    small_const_to_add = 1e-6)
 draw_plot(Rosenbrock3D_ready, "Rosenbrock 3D", breaks=c(-3, -2, -1, 0, 1),
           y_label = "log10 of (minimum value+1e-6)",
-          best_known_val = -6, label_line = "global minimum")
+          y_line_position = -6, label_line = "global minimum")
 ggsave(filename = "results/plots/Rosenbrock3D.png", width = 7, height = 4.5,
        dpi=700)
 
@@ -255,7 +266,7 @@ Rosenbrock10D_ready <- prepare_data(Rosenbrock10D,
                                     small_const_to_add = 1e-6)
 draw_plot(Rosenbrock10D_ready, "Rosenbrock 10D", breaks=c(-2, -1, 0, 1, 2),
           y_label = "log10 of (minimum value+1e-6)",
-          best_known_val = -6, label_line = "global minimum")
+          y_line_position = -6, label_line = "global minimum")
 ggsave(filename = "results/plots/Rosenbrock10D.png", width = 7, height = 4.5,
        dpi=700)
 
@@ -265,7 +276,7 @@ Rosenbrock20D_ready <- prepare_data(Rosenbrock20D,
                                     small_const_to_add = 1e-6)
 draw_plot(Rosenbrock20D_ready, "Rosenbrock 20D", breaks=c(-2, -1, 0, 1, 2),
           y_label = "log10 of (minimum value+1e-6)",
-          best_known_val = -6, label_line = "global minimum")
+          y_line_position = -6, label_line = "global minimum")
 ggsave(filename = "results/plots/Rosenbrock20D.png", width = 7, height = 4.5,
        dpi=700)
 
@@ -275,10 +286,15 @@ Rosenbrock50D_ready <- prepare_data(Rosenbrock50D,
                                     small_const_to_add = 1e-6)
 draw_plot(Rosenbrock50D_ready, "Rosenbrock 50D", breaks=c(-2, -1, 0, 1, 2),
           y_label = "log10 of (minimum value+1e-6)",
-          best_known_val = -6, label_line = "global minimum")
+          y_line_position = -6, label_line = "global minimum")
 ggsave(filename = "results/plots/Rosenbrock50D.png", width = 7, height = 4.5,
        dpi=700)
 
+# calculate best found values
+ga_values <- Rosenbrock10D$value[Rosenbrock10D$method == "ga"]
+min(ga_values)
+best_values_by_method <- Rosenbrock3D$value[Rosenbrock3D$method == "ga"]
+min(best_values)
 
 LallN6 <- read.csv("results/LallN6.csv")
 LallN6_ready <- prepare_data(LallN6,
@@ -286,7 +302,7 @@ LallN6_ready <- prepare_data(LallN6,
                              small_const_to_add = 0)
 draw_plot(LallN6_ready, "Problem A, N=6", breaks=c(-3, -2, -1, 0, 1),
           y_label = "-ln(det(FIM))",
-          best_known_val = optimum_Lall_N6, label_line = "global minimum",
+          y_line_position = optimum_Lall_N6, label_line = "global minimum",
           add_tick_minimum = TRUE)
 ggsave(filename = "results/plots/LallN6.png", width = 7, height = 4.5,
        dpi=700)
@@ -297,17 +313,47 @@ LallN6_ready <- prepare_data(LallN6, what_to_do_with_value = "make differences",
                              small_const_to_add = 1e-6)
 draw_plot(LallN6_ready, "Problem A, N=6", breaks=c(-3, -2, -1, 0, 1),
           y_label = "log10 of (difference from the expected global minimum + 1e-6)",
-          best_known_val = -6, label_line = "zero difference")
+          y_line_position = -6, label_line = "zero difference")
 ggsave(filename = "results/plots/LallN6_2.png", width = 7, height = 4.5,
        dpi=700)
 
-LallN24 <- read.csv("results/LallN24_4.csv")
+LallN24 <- read.csv("results/LallN24.csv")
 LallN24_ready <- prepare_data(LallN24,
                              what_to_do_with_value = "nothing",
                              small_const_to_add = 0)
 draw_plot(LallN24_ready, "Problem A, N=24", breaks=c(-2, -1, 0, 1, 2),
-          y_label = "-ln(det(FIM))", best_known_val = optimum_Lall_N24,
-          label_line = "global minimum", add_tick_minimum = TRUE)
+          y_label = "-ln(det(FIM))", y_line_position = optimum_Lall_N24,
+          label_line = "global minimum", add_tick_minimum = TRUE,
+          leave_out_ticks = c(-1))
 ggsave(filename = "results/plots/LallN24.png", width = 7, height = 4.5,
        dpi=700)
-print(optimum_Lall_N6)
+
+LallN24_ready <- prepare_data(LallN24, what_to_do_with_value = "make differences",
+                             best_known_value = optimum_Lall_N24,
+                             small_const_to_add = 1e-6)
+draw_plot(LallN24_ready, "Problem A, N=24", breaks=c(-3, -2, -1, 0, 1, 2),
+          y_label = "log10 of (difference from the expected global minimum + 1e-6)",
+          y_line_position = -6, label_line = "zero difference")
+ggsave(filename = "results/plots/LallN24_2.png", width = 7, height = 4.5,
+       dpi=700)
+
+LallN96 <- read.csv("results/LallN96.csv")
+LallN96_ready <- prepare_data(LallN96,
+                              what_to_do_with_value = "nothing",
+                              small_const_to_add = 0)
+draw_plot(LallN96_ready, "Problem A, N=96", breaks=c(-2, -1, 0, 1, 2),
+          y_label = "-ln(det(FIM))", y_line_position = optimum_Lall_N96,
+          label_line = "global minimum", add_tick_minimum = TRUE)
+ggsave(filename = "results/plots/LallN96.png", width = 7, height = 4.5,
+       dpi=700)
+
+LallN96_ready <- prepare_data(LallN96, what_to_do_with_value = "make differences",
+                              best_known_value = optimum_Lall_N96,
+                              small_const_to_add = 1e-6)
+draw_plot(LallN96_ready, "Problem A, N=96", breaks=c(-3, -2, -1, 0, 1),
+          y_label = "log10 of (difference from the expected global minimum + 1e-6)",
+          y_line_position = -6, label_line = "zero difference",
+          add_tick_minimum = TRUE)
+ggsave(filename = "results/plots/LallN96_2.png", width = 7, height = 4.5,
+       dpi=700)
+
