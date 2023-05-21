@@ -3,8 +3,8 @@
 # Date: May 14, 2023
 
 
-source("/home/viki/Dokumenty/vikine_skolske/bakalarka_final/optibenchmarks/R/functions_for_benchmarking.R")
-source("/home/viki/Dokumenty/vikine_skolske/bakalarka_final/optibenchmarks/R/optimization_problems.R")
+source("functions_for_benchmarking.R")
+source("optimization_problems.R")
 
 
 # 2D Rosenbrock function

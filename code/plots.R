@@ -2,8 +2,8 @@
 # Author: Jana Viktoria Kovacikova
 # Date: May 15, 2023
 
-setwd("/home/viki/Dokumenty/vikine_skolske/bakalarka_final/Metaheuristics-in-R")
-source("code/best_solutions.R")
+
+source("best_solutions.R")
 # installation may be necessary
 # install.packages("dplyr", "ggplot2")
 library("ggplot2")
@@ -171,11 +171,12 @@ remove_method <- function(df, method_name) {
 #' global optimum.
 #' @param add_tick_minimum A boolean indicating whether a tick is to be added
 #' next to the horizontal line of global minimum.
-#' @param leave_out_ticks A vector of numbers which should be left out from the
-#' ticks on y-axis
+#' @param leave_out_y_ticks A vector of numbers which are be left out from ticks
+#' of y-axis.
+#' @param custom_y_breaks A vector of y-axis breaks.
 draw_plot <- function(data, title, breaks, y_label, y_line_position = NULL,
                       limits = NULL, label_line = "", add_tick_minimum = FALSE,
-                      leave_out_ticks = NULL) {
+                      leave_out_y_ticks = NULL, custom_y_breaks = NULL) {
   # rename the methods
   new_labels <- c("optim" = "L-BFGS-B", "DEoptim" = "DE",
                   "ga" = "GA", "psoptim" = "PSO", "cobyla" = "COBYLA",
@@ -192,10 +193,13 @@ draw_plot <- function(data, title, breaks, y_label, y_line_position = NULL,
 
   # Get default y-breaks values
   default_breaks <- pretty(data$y)
+  if (!is.null(custom_y_breaks)) {
+    default_breaks <- custom_y_breaks
+  }
   if (add_tick_minimum & !is.null(y_line_position)) {
-    if (!is.null(leave_out_ticks)) {
-      # remove breaks that are specified by leave_out_ticks
-      default_breaks <- default_breaks[!default_breaks %in% leave_out_ticks]
+    if (!is.null(leave_out_y_ticks)) {
+      # remove breaks that are specified by leave_out_y_ticks
+      default_breaks <- default_breaks[!default_breaks %in% leave_out_y_ticks]
     }
     # Add the expected global minimum tick
     y_breaks <- c(default_breaks, y_line_position)
@@ -248,7 +252,9 @@ draw_plot <- function(data, title, breaks, y_label, y_line_position = NULL,
 }
 
 
-# load the optimization benchmarking data and plot them
+
+
+# load the optimization benchmarking data and plot the results
 
 Rosenbrock3D <- read.csv("results/Rosenbrock3D.csv")
 Rosenbrock3D_ready <- prepare_data(Rosenbrock3D,
@@ -301,7 +307,7 @@ LallN6_ready <- prepare_data(LallN6,
                              what_to_do_with_value = "nothing",
                              small_const_to_add = 0)
 draw_plot(LallN6_ready, "Problem A, N=6", breaks=c(-3, -2, -1, 0, 1),
-          y_label = "-ln(det(FIM))",
+          y_label = "minimum value found",
           y_line_position = optimum_Lall_N6, label_line = "global minimum",
           add_tick_minimum = TRUE)
 ggsave(filename = "results/plots/LallN6.png", width = 7, height = 4.5,
@@ -313,7 +319,8 @@ LallN6_ready <- prepare_data(LallN6, what_to_do_with_value = "make differences",
                              small_const_to_add = 1e-6)
 draw_plot(LallN6_ready, "Problem A, N=6", breaks=c(-3, -2, -1, 0, 1),
           y_label = "log10 of (difference from the expected global minimum + 1e-6)",
-          y_line_position = -6, label_line = "zero difference")
+          y_line_position = -6, label_line = "zero difference",
+          custom_y_breaks = c(1, 0, -1, -2, -3, -4, -5, -6))
 ggsave(filename = "results/plots/LallN6_2.png", width = 7, height = 4.5,
        dpi=700)
 
@@ -322,9 +329,9 @@ LallN24_ready <- prepare_data(LallN24,
                              what_to_do_with_value = "nothing",
                              small_const_to_add = 0)
 draw_plot(LallN24_ready, "Problem A, N=24", breaks=c(-2, -1, 0, 1, 2),
-          y_label = "-ln(det(FIM))", y_line_position = optimum_Lall_N24,
+          y_label = "minimum value found", y_line_position = optimum_Lall_N24,
           label_line = "global minimum", add_tick_minimum = TRUE,
-          leave_out_ticks = c(-1))
+          leave_out_y_ticks = c(-1))
 ggsave(filename = "results/plots/LallN24.png", width = 7, height = 4.5,
        dpi=700)
 
@@ -342,7 +349,7 @@ LallN96_ready <- prepare_data(LallN96,
                               what_to_do_with_value = "nothing",
                               small_const_to_add = 0)
 draw_plot(LallN96_ready, "Problem A, N=96", breaks=c(-2, -1, 0, 1, 2),
-          y_label = "-ln(det(FIM))", y_line_position = optimum_Lall_N96,
+          y_label = "minimum value found", y_line_position = optimum_Lall_N96,
           label_line = "global minimum", add_tick_minimum = TRUE)
 ggsave(filename = "results/plots/LallN96.png", width = 7, height = 4.5,
        dpi=700)
@@ -350,10 +357,102 @@ ggsave(filename = "results/plots/LallN96.png", width = 7, height = 4.5,
 LallN96_ready <- prepare_data(LallN96, what_to_do_with_value = "make differences",
                               best_known_value = optimum_Lall_N96,
                               small_const_to_add = 1e-6)
-draw_plot(LallN96_ready, "Problem A, N=96", breaks=c(-3, -2, -1, 0, 1),
+draw_plot(LallN96_ready, "Problem A, N=96", breaks=c(-2, -1, 0, 1, 2),
           y_label = "log10 of (difference from the expected global minimum + 1e-6)",
           y_line_position = -6, label_line = "zero difference",
-          add_tick_minimum = TRUE)
+          custom_y_breaks = c(0, -1, -2, -3, -4, -5, -6))
 ggsave(filename = "results/plots/LallN96_2.png", width = 7, height = 4.5,
        dpi=700)
 
+
+
+DuarteN10 <- read.csv("results/DuarteN10.csv")
+DuarteN10_ready <- prepare_data(DuarteN10,
+                                what_to_do_with_value = "nothing",
+                                small_const_to_add = 0)
+draw_plot(DuarteN10_ready, "Problem B, N=10", breaks=c(-2, -1, 0, 1, 2),
+          y_label = "minimum value found", y_line_position = optimum_Duarte_N10,
+          label_line = "global minimum", add_tick_minimum = TRUE,
+          leave_out_y_ticks = c(-20))
+ggsave(filename = "results/plots/DuarteN10.png", width = 7, height = 4.5,
+       dpi=700)
+
+DuarteN10_ready <- prepare_data(DuarteN10,
+                                what_to_do_with_value = "make differences",
+                                best_known_value = optimum_Duarte_N10,
+                                small_const_to_add = 1e-6)
+draw_plot(DuarteN10_ready, "Problem B, N=10", breaks=c(-2, -1, 0, 1, 2),
+          y_label = "log10 of (difference from the expected global minimum + 1e-6)",
+          y_line_position = -6, label_line = "zero difference",
+          custom_y_breaks = c(2, 1, 0, -1, -2, -3, -4, -5, -6))
+ggsave(filename = "results/plots/DuarteN10_2.png", width = 7, height = 4.5,
+       dpi=700)
+
+
+DuarteN50 <- read.csv("results/DuarteN50.csv")
+DuarteN50_ready <- prepare_data(DuarteN50,
+                                what_to_do_with_value = "nothing",
+                                small_const_to_add = 0)
+draw_plot(DuarteN50_ready, "Problem B, N=50", breaks=c(-2, -1, 0, 1, 2),
+          y_label = "minimum value found", y_line_position = optimum_Duarte_N50,
+          label_line = "global minimum", add_tick_minimum = TRUE,
+          leave_out_y_ticks = c(-38))
+ggsave(filename = "results/plots/DuarteN50.png", width = 7, height = 4.5,
+       dpi=700)
+
+DuarteN50_ready <- prepare_data(DuarteN50,
+                                what_to_do_with_value = "make differences",
+                                best_known_value = optimum_Duarte_N50,
+                                small_const_to_add = 1e-6)
+draw_plot(DuarteN50_ready, "Problem B, N=50", breaks=c(-2, -1, 0, 1, 2),
+          y_label = "log10 of (difference from the expected global minimum + 1e-6)",
+          y_line_position = -6, label_line = "zero difference",
+          custom_y_breaks = c(2, 1, 0, -1, -2, -3, -4, -5, -6))
+ggsave(filename = "results/plots/DuarteN50_2.png", width = 7, height = 4.5,
+       dpi=700)
+
+
+DuarteN100 <- read.csv("results/DuarteN100.csv")
+DuarteN100_ready <- prepare_data(DuarteN100,
+                                what_to_do_with_value = "nothing",
+                                small_const_to_add = 0)
+draw_plot(DuarteN100_ready, "Problem B, N=100", breaks=c(-2, -1, 0, 1, 2),
+          y_label = "minimum value found", y_line_position = optimum_Duarte_N100,
+          label_line = "global minimum", add_tick_minimum = TRUE,
+          leave_out_y_ticks = c(-38))
+ggsave(filename = "results/plots/DuarteN100.png", width = 7, height = 4.5,
+       dpi=700)
+
+DuarteN100_ready <- prepare_data(DuarteN100,
+                                 what_to_do_with_value = "make differences",
+                                 best_known_value = optimum_Duarte_N100,
+                                 small_const_to_add = 1e-6)
+draw_plot(DuarteN100_ready, "Problem B, N=100", breaks=c(-2, -1, 0, 1, 2),
+          y_label = "log10 of (difference from the expected global minimum + 1e-6)",
+          y_line_position = -6, label_line = "zero difference",
+          custom_y_breaks = c(2, 1, 0, -1, -2, -3, -4, -5, -6))
+ggsave(filename = "results/plots/DuarteN100_2.png", width = 7, height = 4.5,
+       dpi=700)
+
+
+DuarteN200 <- read.csv("results/DuarteN200.csv")
+DuarteN200_ready <- prepare_data(DuarteN200,
+                                 what_to_do_with_value = "nothing",
+                                 small_const_to_add = 0)
+draw_plot(DuarteN200_ready, "Problem B, N=200", breaks=c(-2, -1, 0, 1, 2),
+          y_label = "minimum value found", y_line_position = optimum_Duarte_N200,
+          label_line = "global minimum", add_tick_minimum = TRUE,
+          leave_out_y_ticks = c(-52))
+ggsave(filename = "results/plots/DuarteN200.png", width = 7, height = 4.5,
+       dpi=700)
+
+DuarteN200_ready <- prepare_data(DuarteN200,
+                                 what_to_do_with_value = "make differences",
+                                 best_known_value = optimum_Duarte_N200,
+                                 small_const_to_add = 1e-6)
+draw_plot(DuarteN200_ready, "Problem B, N=200", breaks=c(-2, -1, 0, 1, 2),
+          y_label = "log10 of (difference from the expected global minimum + 1e-6)",
+          y_line_position = -6, label_line = "zero difference",
+          custom_y_breaks = c(1, 0, -1, -2, -3, -4, -5, -6))
+ggsave(filename = "results/plots/DuarteN200_2.png", width = 7, height = 4.5,
+       dpi=700)

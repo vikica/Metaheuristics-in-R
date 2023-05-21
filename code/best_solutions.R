@@ -1,8 +1,8 @@
-# In this script, the best known solutions to our optimization problems
+# In this script, the global optimums of our optimization problems
 # (problem A and problem B from optimization_problems.R) are stored as variables
 
 
-source("/home/viki/Dokumenty/vikine_skolske/bakalarka_final/optibenchmarks/R/optimization_problems.R")
+source("optimization_problems.R")
 
 
 #' Converts a string representation of a numeric vector (originated in R output)

@@ -143,6 +143,8 @@ load_csv_data <- function(path_to_csv_file) {
 #' The value of objective_name does not influence the optimization.
 #' However, the provided objective_name should correspond to the objective
 #' passed in parameters_for_optimization_method.
+#' @param minimalistic_results A boolean. If true, some less important columns
+#' will be left out in resulting dataframe.
 #' @return A dataframe containing the data about the optimization run and
 #' the optimization results.
 #' @examples
@@ -156,7 +158,8 @@ load_csv_data <- function(path_to_csv_file) {
 get_results <- function(package, optimization_method,
                         parameters_for_optimization_method,
                         time_units = "secs",
-                        objective_name = NULL) {
+                        objective_name = NULL,
+                        minimalistic_results = FALSE) {
 
   # load the package
   tryCatch(
@@ -178,19 +181,28 @@ get_results <- function(package, optimization_method,
 
   # prepare the data
   if (package %in% c("stats", "GA", "DEoptim", "pso", "ABCoptim", "nloptr")) {
-    input_data <- get_input_data(package, parameters_for_optimization_method)
+    input_data <- get_input_data(package, parameters_for_optimization_method,
+                                 minimalistic_results = minimalistic_results)
   }
   else {
     input_data <- c(starting_point = "?", lower_bound = "?", upper_bound = "?",
                     max_iterations = "?", max_evaluations = "?")
   }
-  output_data <- get_output_data(package, result)
+  output_data <- get_output_data(package, result,
+                                 minimalistic_results = minimalistic_results)
 
   # fill the dataframe
   df <- data.frame(R_package = package, method = optimization_method)
   if (!is.null(objective_name)) {
     df <- cbind(df, objective_name = objective_name)
   }
+
+  if (minimalistic_results) {
+    return(cbind(df, input_data,output_data,
+                 data.frame(execution_time = execution_time,
+                            time_units = time_units)))
+  }
+
   all_params <- paste(names(parameters_for_optimization_method),
                       parameters_for_optimization_method, sep = " = ",
                       collapse = ", ")
@@ -213,10 +225,13 @@ get_results <- function(package, optimization_method,
 #' is supposed to be loaded from.
 #' @param parameters_for_optimization_method A list containing all parameters
 #' that would normally be passed to the provided optimization method.
+#' @param minimalistic_results A boolean. If true, some less important columns
+#' will be left out from resulting dataframe.
 #' @return A dataframe containing starting_point, lower_bound, upper_bound,
 #' max_iterations and max_evaluations.
 #' @export
-get_input_data <- function(package_name, input_list) {
+get_input_data <- function(package_name, input_list,
+                           minimalistic_results = FALSE) {
 
   # get the starting point
   starting_point <- "-"
@@ -299,10 +314,16 @@ get_input_data <- function(package_name, input_list) {
     )
   }
 
-  return (data.frame(dimension = dimension, starting_point = starting_point,
-                     lower_bound = lower_bound, upper_bound = upper_bound,
-                     max_iterations = max_iterations,
-                     max_evaluations = max_evaluations))
+  if (minimalistic_results) {
+    return(data.frame(dimension = dimension, starting_point = starting_point,
+                      max_iterations = max_iterations,
+                      max_evaluations = max_evaluations))
+  }
+
+  return(data.frame(dimension = dimension, starting_point = starting_point,
+                    lower_bound = lower_bound, upper_bound = upper_bound,
+                    max_iterations = max_iterations,
+                    max_evaluations = max_evaluations))
 }
 
 
@@ -319,10 +340,13 @@ get_input_data <- function(package_name, input_list) {
 #' is supposed to be loaded from.
 #' @param opti_output The output of an optimization method from the
 #' specified package.
+#' @param minimalistic_results A boolean. If true, some less important columns
+#' will be left out in resulting dataframe.
 #' @return A dataframe containing the information about the found optimal value,
 #' solution, number of iterations and evaluations, convergence and message.
 #' @export
-get_output_data <- function(package_name, opti_output) {
+get_output_data <- function(package_name, opti_output,
+                            minimalistic_results = FALSE) {
   results <- c(solution = NULL, value = NULL, number_of_iterations = "-",
                number_of_evaluations = "-", convergence = "-", message = "-")
   if (package_name == "GA") {
@@ -372,12 +396,16 @@ get_output_data <- function(package_name, opti_output) {
   results["solution"] <- paste("(", paste(solution, collapse = ", "), ")", sep = "")
 
   # reorder and save to a dataframe
+  if (minimalistic_results) {
+    return(data.frame(value = results["value"], solution = results["solution"],
+                      message = results["message"]))
+  }
+
   df <- data.frame(value = results["value"], solution = results["solution"],
                    number_of_iterations = results["number_of_iterations"],
                    number_of_evaluations = results["number_of_evaluations"],
                    convergence = results["convergence"],
                    message = results["message"])
-
   return (df)
 }
 
