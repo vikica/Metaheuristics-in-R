@@ -79,7 +79,7 @@ for (starting_point in starting_points) {
                         time_units = "secs", objective_name = "Duarte",
                         minimalistic_results = TRUE)
   result <- cbind(result, time_cluster)
-  # df <- result
+  df <- result
 
   # ga
   opti_params_ga <- list(type=c("real-valued"), fitness = minus_Duarte,
